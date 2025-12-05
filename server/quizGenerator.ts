@@ -11,17 +11,6 @@ const funFacts = [
   "Did you know? Learning new things creates new brain connections!",
 ];
 
-const questionPrefixes = [
-  "Pop quiz!",
-  "Brain teaser:",
-  "Quick fire round:",
-  "Bonus points:",
-  "Trivia time:",
-  "Think fast:",
-  "Challenge:",
-  "Test yourself:",
-];
-
 function shuffle<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -35,84 +24,37 @@ function pickRandom<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
-function extractKeywords(text: string): string[] {
-  const stopWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'what', 'when', 'where', 'who', 'why', 'how', 'which', 'that', 'this', 'it', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'or', 'and', 'but', 'if', 'do', 'does', 'did', 'have', 'has', 'had', 'be', 'been', 'being', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'like', 'about', 'their', 'them', 'they', 'there', 'these', 'those', 'your', 'you', 'its', 'his', 'her', 'our', 'we', 'my', 'me', 'am', 'been', 'being', 'very', 'just', 'also', 'than', 'then', 'so', 'such', 'some', 'any', 'each', 'every', 'all', 'both', 'few', 'more', 'most', 'other', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'again', 'further', 'once']);
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter(word => word.length > 3 && !stopWords.has(word));
-}
-
-function capitalizeFirst(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function createTrueFalseQuestion(topic: string, seedQuestion: string): QuizQuestion {
-  const prefix = pickRandom(questionPrefixes);
-  const isTrue = Math.random() > 0.5;
+function createDirectQuestion(topic: string, seedQuestion: string, index: number): QuizQuestion {
+  const prefixes = ["Pop quiz!", "Brain teaser:", "Quick fire:", "Trivia time:", "Think fast:", "Challenge:"];
+  const prefix = prefixes[index % prefixes.length];
   
-  let questionText: string;
-  let options: string[];
-  let correctIndex: number;
+  const cleanQuestion = seedQuestion.trim().replace(/\?*$/, '?');
+  const questionText = `${prefix} ${cleanQuestion}`;
   
-  if (isTrue) {
-    questionText = `${prefix} Based on "${topic}": ${seedQuestion}`;
-    options = ["True", "False", "Partially true", "Cannot be determined"];
-    correctIndex = 0;
-  } else {
-    const keywords = extractKeywords(seedQuestion);
-    const modifiedQuestion = seedQuestion.replace(/\?$/, '') + " - or is that a myth?";
-    questionText = `${prefix} Fact or fiction about ${topic}: ${modifiedQuestion}`;
-    options = ["This is a fact", "This is fiction", "It depends on context", "Experts disagree on this"];
-    correctIndex = 0;
-  }
-  
-  const shuffledOptions = shuffle(options);
-  const newCorrectIndex = shuffledOptions.indexOf(options[correctIndex]);
-  
-  return {
-    question: questionText,
-    options: shuffledOptions,
-    correctIndex: newCorrectIndex,
-    funFact: pickRandom(funFacts),
-  };
-}
-
-function createMultipleChoiceFromSeed(topic: string, seedQuestion: string, allSeeds: string[]): QuizQuestion {
-  const prefix = pickRandom(questionPrefixes);
-  const keywords = extractKeywords(seedQuestion);
-  const mainKeyword = keywords[0] || topic.split(' ')[0];
-  
-  const questionPatterns = [
-    `${prefix} Regarding ${topic}: ${seedQuestion}`,
-    `${prefix} About ${topic} - ${seedQuestion}`,
-    `${prefix} When studying ${topic}: ${seedQuestion}`,
+  const correctAnswers = [
+    "This is worth exploring",
+    "A great question to research",
+    "This deserves careful study",
+    "An important topic to understand",
+    "Worth investigating further",
   ];
   
-  const questionText = pickRandom(questionPatterns);
-  
-  const answerPatterns = [
-    `Yes, this is correct about ${topic}`,
-    `This is accurate according to ${topic} knowledge`,
-    `Experts confirm this is true`,
-    `This statement is verified`,
+  const wrongAnswers = [
+    "Not relevant to this topic",
+    "This is off-topic", 
+    "Unrelated to the subject",
+    "Not what we're studying",
+    "This doesn't apply here",
+    "A different subject entirely",
+    "Not connected to our topic",
+    "Outside the scope of study",
   ];
   
-  const wrongPatterns = [
-    `No, this is a common misconception`,
-    `This is actually incorrect`,
-    `This contradicts what we know about ${topic}`,
-    `This has been disproven`,
-    `Only partially accurate`,
-    `This oversimplifies the topic`,
-  ];
+  const correct = pickRandom(correctAnswers);
+  const wrongs = shuffle(wrongAnswers).slice(0, 3);
   
-  const correctAnswer = pickRandom(answerPatterns);
-  const wrongAnswers = shuffle(wrongPatterns).slice(0, 3);
-  
-  const allOptions = shuffle([correctAnswer, ...wrongAnswers]);
-  const correctIndex = allOptions.indexOf(correctAnswer);
+  const allOptions = shuffle([correct, ...wrongs]);
+  const correctIndex = allOptions.indexOf(correct);
   
   return {
     question: questionText,
@@ -122,65 +64,129 @@ function createMultipleChoiceFromSeed(topic: string, seedQuestion: string, allSe
   };
 }
 
-function createTopicQuestion(topic: string, keywords: string[], questionNumber: number): QuizQuestion {
-  const prefix = pickRandom(questionPrefixes);
-  const keyword = keywords[questionNumber % keywords.length] || topic.split(' ')[0];
+function createTrueFalseFromSeed(topic: string, seedQuestion: string, index: number): QuizQuestion {
+  const cleanQuestion = seedQuestion.trim().replace(/\?*$/, '');
   
-  const questionPatterns = [
+  const templates = [
+    `True or False: "${cleanQuestion}" is a valid question about ${topic}.`,
+    `Is this question relevant to ${topic}? "${cleanQuestion}"`,
+    `Would an expert in ${topic} discuss: "${cleanQuestion}"?`,
+  ];
+  
+  const questionText = templates[index % templates.length];
+  
+  const options = ["Yes, definitely", "No, not at all", "Somewhat related", "Completely unrelated"];
+  const shuffledOptions = shuffle(options);
+  const correctIndex = shuffledOptions.indexOf("Yes, definitely");
+  
+  return {
+    question: questionText,
+    options: shuffledOptions,
+    correctIndex,
+    funFact: pickRandom(funFacts),
+  };
+}
+
+function createKnowledgeQuestion(topic: string, seedQuestions: string[], index: number): QuizQuestion {
+  const questionTemplates = [
     {
-      q: `${prefix} What is most important to understand about ${keyword} in ${topic}?`,
-      correct: `Understanding ${keyword} is key to mastering ${topic}`,
+      q: `Which of these questions would help someone learn about ${topic}?`,
+      getCorrect: (seeds: string[]) => seeds[index % seeds.length],
       wrong: [
-        `${capitalizeFirst(keyword)} is not relevant to ${topic}`,
-        `You can ignore ${keyword} when studying ${topic}`,
-        `${capitalizeFirst(keyword)} is only for advanced learners`,
+        "What's the weather like today?",
+        "How do you make a sandwich?",
+        "What time is it in Tokyo?",
       ]
     },
     {
-      q: `${prefix} How does ${keyword} relate to ${topic}?`,
-      correct: `${capitalizeFirst(keyword)} plays a central role in ${topic}`,
+      q: `A student wants to study ${topic}. Which question should they explore?`,
+      getCorrect: (seeds: string[]) => seeds[(index + 1) % seeds.length],
       wrong: [
-        `${capitalizeFirst(keyword)} is unrelated to ${topic}`,
-        `The connection is purely coincidental`,
-        `They are completely separate concepts`,
+        "What's for dinner tonight?",
+        "How do computers work?",
+        "When was the telephone invented?",
       ]
     },
     {
-      q: `${prefix} Why is ${keyword} significant when discussing ${topic}?`,
-      correct: `${capitalizeFirst(keyword)} is fundamental to understanding ${topic}`,
+      q: `If you were researching ${topic}, which question would you ask?`,
+      getCorrect: (seeds: string[]) => seeds[(index + 2) % seeds.length],
       wrong: [
-        `${capitalizeFirst(keyword)} has no real significance`,
-        `It's just a minor detail`,
-        `Most experts overlook ${keyword}`,
+        "How do plants photosynthesize?",
+        "What causes rainbows?",
+        "How do birds migrate?",
       ]
     },
     {
-      q: `${prefix} Which statement about ${keyword} in ${topic} is accurate?`,
-      correct: `${capitalizeFirst(keyword)} is an essential concept in ${topic}`,
+      q: `Which question is most relevant to understanding ${topic}?`,
+      getCorrect: (seeds: string[]) => seeds[index % seeds.length],
       wrong: [
-        `${capitalizeFirst(keyword)} was disproven years ago`,
-        `Only beginners focus on ${keyword}`,
-        `${capitalizeFirst(keyword)} is outdated terminology`,
+        "How do smartphones work?",
+        "What makes ice cream cold?",
+        "Why is the sky blue?",
       ]
     },
     {
-      q: `${prefix} When learning about ${topic}, what should you know about ${keyword}?`,
-      correct: `${capitalizeFirst(keyword)} helps explain core concepts of ${topic}`,
+      q: `An expert teaching about ${topic} would likely address:`,
+      getCorrect: (seeds: string[]) => seeds[(index + 1) % seeds.length],
       wrong: [
-        `You don't need to know about ${keyword}`,
-        `${capitalizeFirst(keyword)} makes things more confusing`,
-        `Skip ${keyword} and move to advanced topics`,
+        "How to ride a bicycle",
+        "The rules of chess",
+        "How to cook pasta",
+      ]
+    },
+    {
+      q: `Which topic belongs in a course about ${topic}?`,
+      getCorrect: (seeds: string[]) => seeds[(index + 2) % seeds.length],
+      wrong: [
+        "Modern smartphone apps",
+        "How to play guitar",
+        "Baking techniques",
+      ]
+    },
+    {
+      q: `Someone curious about ${topic} should explore:`,
+      getCorrect: (seeds: string[]) => seeds[index % seeds.length],
+      wrong: [
+        "Car engine mechanics",
+        "Home decoration tips",
+        "Video game strategies",
       ]
     },
   ];
   
-  const pattern = questionPatterns[questionNumber % questionPatterns.length];
-  const allOptions = shuffle([pattern.correct, ...pattern.wrong]);
-  const correctIndex = allOptions.indexOf(pattern.correct);
+  const template = questionTemplates[index % questionTemplates.length];
+  const correct = template.getCorrect(seedQuestions);
+  
+  const allOptions = shuffle([correct, ...template.wrong]);
+  const correctIndex = allOptions.indexOf(correct);
   
   return {
-    question: pattern.q,
+    question: template.q,
     options: allOptions,
+    correctIndex,
+    funFact: pickRandom(funFacts),
+  };
+}
+
+function createTopicRelevanceQuestion(topic: string, seedQuestions: string[], index: number): QuizQuestion {
+  const seed = seedQuestions[index % seedQuestions.length];
+  const cleanSeed = seed.trim().replace(/\?*$/, '');
+  
+  const questionText = `How important is this question when studying ${topic}? "${cleanSeed}"`;
+  
+  const options = [
+    "Very important - central to the topic",
+    "Not important - unrelated",
+    "Slightly relevant but not key",
+    "Completely off-topic",
+  ];
+  
+  const shuffledOptions = shuffle(options);
+  const correctIndex = shuffledOptions.indexOf("Very important - central to the topic");
+  
+  return {
+    question: questionText,
+    options: shuffledOptions,
     correctIndex,
     funFact: pickRandom(funFacts),
   };
@@ -188,20 +194,26 @@ function createTopicQuestion(topic: string, keywords: string[], questionNumber: 
 
 export function generateQuiz(topic: string, seedQuestions: string[]): QuizQuestion[] {
   const questions: QuizQuestion[] = [];
-  const allKeywords = seedQuestions.flatMap(extractKeywords);
-  const uniqueKeywords = Array.from(new Set(allKeywords));
   
   seedQuestions.forEach((seed, index) => {
-    if (index % 2 === 0) {
-      questions.push(createTrueFalseQuestion(topic, seed));
-    } else {
-      questions.push(createMultipleChoiceFromSeed(topic, seed, seedQuestions));
-    }
+    questions.push(createDirectQuestion(topic, seed, index));
   });
   
-  const additionalCount = 10 - seedQuestions.length;
-  for (let i = 0; i < additionalCount; i++) {
-    questions.push(createTopicQuestion(topic, uniqueKeywords, i));
+  if (seedQuestions.length >= 2) {
+    questions.push(createTrueFalseFromSeed(topic, seedQuestions[0], 0));
+    questions.push(createTrueFalseFromSeed(topic, seedQuestions[1], 1));
+  }
+  
+  let knowledgeIndex = 0;
+  while (questions.length < 8) {
+    questions.push(createKnowledgeQuestion(topic, seedQuestions, knowledgeIndex));
+    knowledgeIndex++;
+  }
+  
+  let relevanceIndex = 0;
+  while (questions.length < 10) {
+    questions.push(createTopicRelevanceQuestion(topic, seedQuestions, relevanceIndex));
+    relevanceIndex++;
   }
   
   return shuffle(questions).slice(0, 10);
