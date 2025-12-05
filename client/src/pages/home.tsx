@@ -14,7 +14,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [topic, setTopic] = useState("");
-  const [questions, setQuestions] = useState(["", "", ""]);
+  const [questions, setQuestions] = useState([""]);
 
   const createQuizMutation = useMutation({
     mutationFn: async (data: { topic: string; seedQuestions: string[] }) => {
@@ -56,7 +56,7 @@ export default function Home() {
   };
 
   const removeQuestion = (index: number) => {
-    if (questions.length > 3) {
+    if (questions.length > 1) {
       setQuestions(questions.filter((_, i) => i !== index));
     }
   };
@@ -74,14 +74,6 @@ export default function Home() {
       return;
     }
     
-    if (filledQuestions.length < 3) {
-      toast({
-        title: "Need more questions",
-        description: "Please provide at least 3 example questions",
-        variant: "destructive",
-      });
-      return;
-    }
     
     createQuizMutation.mutate({
       topic: topic.trim(),
@@ -114,7 +106,7 @@ export default function Home() {
               Create Your Quiz
             </CardTitle>
             <CardDescription>
-              Enter a topic and at least 3 example questions to get started
+              Enter a topic to get started. Add example questions to personalize your quiz!
             </CardDescription>
           </CardHeader>
           
@@ -138,7 +130,7 @@ export default function Home() {
               <div className="space-y-4">
                 <Label className="text-base font-medium flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  Example Questions (at least 3)
+                  Example Questions (optional)
                 </Label>
                 
                 {questions.map((question, index) => (
@@ -153,7 +145,7 @@ export default function Home() {
                       onChange={(e) => updateQuestion(index, e.target.value)}
                       className="min-h-[60px] resize-none"
                     />
-                    {questions.length > 3 && (
+                    {questions.length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"

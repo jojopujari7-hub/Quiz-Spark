@@ -192,28 +192,113 @@ function createTopicRelevanceQuestion(topic: string, seedQuestions: string[], in
   };
 }
 
+function createTopicOnlyQuestion(topic: string, index: number): QuizQuestion {
+  const questionTemplates = [
+    {
+      q: `What would be a good first step to learn about ${topic}?`,
+      correct: "Research the basics and key concepts",
+      wrong: ["Ignore it completely", "Skip to advanced topics", "Assume you already know everything"]
+    },
+    {
+      q: `Why might someone be interested in studying ${topic}?`,
+      correct: "To gain knowledge and understanding",
+      wrong: ["There's no reason to study it", "It's completely useless", "Only experts should care"]
+    },
+    {
+      q: `How would you describe ${topic} to a friend?`,
+      correct: "An interesting subject worth exploring",
+      wrong: ["A boring waste of time", "Something to avoid", "Not worth discussing"]
+    },
+    {
+      q: `What's the best approach to understanding ${topic}?`,
+      correct: "Study with curiosity and patience",
+      wrong: ["Don't bother trying", "Just guess everything", "Avoid asking questions"]
+    },
+    {
+      q: `If you wanted to become an expert in ${topic}, what should you do?`,
+      correct: "Study consistently and practice regularly",
+      wrong: ["Give up immediately", "Never read about it", "Ignore all resources"]
+    },
+    {
+      q: `What makes ${topic} worth learning about?`,
+      correct: "It expands your knowledge and perspective",
+      wrong: ["Nothing at all", "It's a waste of time", "There's no value in it"]
+    },
+    {
+      q: `How could knowledge of ${topic} be useful?`,
+      correct: "It helps understand related concepts",
+      wrong: ["It has no practical use", "You'll never need it", "It's completely irrelevant"]
+    },
+    {
+      q: `What's true about learning ${topic}?`,
+      correct: "Anyone can learn with effort",
+      wrong: ["Only geniuses can understand it", "It's impossible to learn", "You need special powers"]
+    },
+    {
+      q: `Why do people study ${topic}?`,
+      correct: "To satisfy curiosity and gain expertise",
+      wrong: ["They have nothing better to do", "It's required by law", "For no good reason"]
+    },
+    {
+      q: `What attitude helps when studying ${topic}?`,
+      correct: "Openness and willingness to learn",
+      wrong: ["Complete indifference", "Hostility and resistance", "Stubborn closed-mindedness"]
+    },
+  ];
+  
+  const template = questionTemplates[index % questionTemplates.length];
+  const allOptions = shuffle([template.correct, ...template.wrong]);
+  const correctIndex = allOptions.indexOf(template.correct);
+  
+  const prefixes = ["Pop quiz!", "Brain teaser:", "Quick fire:", "Trivia time:", "Think fast:", "Challenge:"];
+  const prefix = prefixes[index % prefixes.length];
+  
+  return {
+    question: `${prefix} ${template.q}`,
+    options: allOptions,
+    correctIndex,
+    funFact: pickRandom(funFacts),
+  };
+}
+
 export function generateQuiz(topic: string, seedQuestions: string[]): QuizQuestion[] {
   const questions: QuizQuestion[] = [];
+  const filteredSeeds = seedQuestions.filter(q => q.trim().length > 0);
   
-  seedQuestions.forEach((seed, index) => {
+  if (filteredSeeds.length === 0) {
+    for (let i = 0; i < 10; i++) {
+      questions.push(createTopicOnlyQuestion(topic, i));
+    }
+    return shuffle(questions);
+  }
+  
+  filteredSeeds.forEach((seed, index) => {
     questions.push(createDirectQuestion(topic, seed, index));
   });
   
-  if (seedQuestions.length >= 2) {
-    questions.push(createTrueFalseFromSeed(topic, seedQuestions[0], 0));
-    questions.push(createTrueFalseFromSeed(topic, seedQuestions[1], 1));
+  if (filteredSeeds.length >= 2) {
+    questions.push(createTrueFalseFromSeed(topic, filteredSeeds[0], 0));
+    questions.push(createTrueFalseFromSeed(topic, filteredSeeds[1], 1));
+  } else if (filteredSeeds.length === 1) {
+    questions.push(createTrueFalseFromSeed(topic, filteredSeeds[0], 0));
   }
   
   let knowledgeIndex = 0;
-  while (questions.length < 8) {
-    questions.push(createKnowledgeQuestion(topic, seedQuestions, knowledgeIndex));
+  while (questions.length < 8 && filteredSeeds.length > 0) {
+    questions.push(createKnowledgeQuestion(topic, filteredSeeds, knowledgeIndex));
     knowledgeIndex++;
   }
   
   let relevanceIndex = 0;
-  while (questions.length < 10) {
-    questions.push(createTopicRelevanceQuestion(topic, seedQuestions, relevanceIndex));
+  while (questions.length < 10 && filteredSeeds.length > 0) {
+    questions.push(createTopicRelevanceQuestion(topic, filteredSeeds, relevanceIndex));
     relevanceIndex++;
+  }
+  
+  let topicIndex = 0;
+  while (questions.length < 10) {
+    questions.push(createTopicOnlyQuestion(topic, topicIndex));
+    topicIndex++;
   }
   
   return shuffle(questions).slice(0, 10);

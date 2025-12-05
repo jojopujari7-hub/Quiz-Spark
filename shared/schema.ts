@@ -31,7 +31,8 @@ export type Quiz = typeof quizzes.$inferSelect;
 export const quizRequestSchema = z.object({
   topic: z.string().min(3, "Topic must be at least 3 characters"),
   seedQuestions: z.array(z.string().min(5, "Each question should be at least 5 characters"))
-    .min(3, "Please provide at least 3 example questions"),
+    .optional()
+    .default([]),
 });
 
 export type QuizRequest = z.infer<typeof quizRequestSchema>;
