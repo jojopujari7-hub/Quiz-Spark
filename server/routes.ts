@@ -16,11 +16,10 @@ export async function registerRoutes(
       
       if (!result.success) {
         const validationError = fromZodError(result.error);
-        return res.status(400).json({ 
-          error: validationError.message 
+        return res.status(400).json({
+          error: validationError.message,
         });
       }
-
       const { topic, seedQuestions } = result.data;
       
       const generatedQuestions = generateQuiz(topic, seedQuestions);
