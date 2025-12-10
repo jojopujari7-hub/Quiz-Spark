@@ -18,6 +18,8 @@ export function generateQuiz(numQuestions = 5): QuizQuestion[] {
     saveUsedSeeds();
     return questions;
   }
+    return questions;
+  }
 
   const shuffledSeeds = shuffle(availableSeeds);
   const selectedSeeds = shuffledSeeds.slice(0, numQuestions);
