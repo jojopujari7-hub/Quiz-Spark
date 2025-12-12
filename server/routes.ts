@@ -1,67 +1,26 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { quizRequestSchema } from "@shared/schema";
-import { generateQuiz } from "./quizGenerator";
-import { fromZodError } from "zod-validation-error";
+import express from "express";
+// import { generateQuiz } from "./quizGenerator"; // use this once generateQuiz is ready
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
-  
-  app.post("/api/quizzes", async (req, res) => {
-    try {
-      const result = quizRequestSchema.safeParse(req.body);
-      
-      if (!result.success) {
-        const validationError = fromZodError(result.error);
-        return res.status(400).json({
-          error: validationError.message,
-        });
-      }
-      const { topic, seedQuestions } = result.data;
-      
-      const generatedQuestions = generateQuiz(topic, seedQuestions);
-      
-      const quiz = await storage.createQuiz({
-        topic,
-        seedQuestions,
-        generatedQuestions,
-      });
+const router = express.Router();
 
-      return res.status(201).json(quiz);
-    } catch (error) {
-      console.error("Error creating quiz:", error);
-      return res.status(500).json({ error: "Failed to generate quiz" });
-    }
-  });
+// Simple test route
+router.get("/hello", (req, res) => {
+  res.send("Hello world");
+});
 
-  app.get("/api/quizzes/:id", async (req, res) => {
-    try {
-      const quiz = await storage.getQuiz(req.params.id);
-      
-      if (!quiz) {
-        return res.status(404).json({ error: "Quiz not found" });
-      }
+// Quiz route with 10 questions that match the frontend's expected format
+router.get("/api/quiz", (req, res) => {
+  // Modified data structure to match QuizQuestion interface
+  const quiz = Array.from({ length: 10 }).map((_, i) => ({
+    question: `Sample question ${i + 1}`,
+    options: ["Option A", "Option B", "Option C", "Option D"],
+    correctIndex: 0, // Frontend expects 'correctIndex' (number 0-3)
+    funFact: `Fun fact ${i + 1}` // Frontend expects 'funFact'
+  }));
 
-      return res.json(quiz);
-    } catch (error) {
-      console.error("Error fetching quiz:", error);
-      return res.status(500).json({ error: "Failed to fetch quiz" });
-    }
-  });
+  res.json(quiz);
+});
 
-  app.get("/api/quizzes", async (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 10;
-      const quizzes = await storage.getRecentQuizzes(limit);
-      return res.json(quizzes);
-    } catch (error) {
-      console.error("Error fetching quizzes:", error);
-      return res.status(500).json({ error: "Failed to fetch quizzes" });
-    }
-  });
-
-  return httpServer;
+export function registerRoutes(_httpServer: any, app: express.Express) {
+  app.use(router);
 }
