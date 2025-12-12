@@ -30,11 +30,11 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [isFinished, setIsFinished] = useState(false);
 
-  const { data: quiz, isLoading, error } = useQuery<Quiz>({
-    queryKey: ["quiz", id],
-    // *** MODIFICATION HERE *** 
-    // Changed endpoint from `/api/quizzes/${id}` to the working `/api/quiz`
+  // Fetching an array of QuizQuestions directly now (data matches the type)
+  const { data: questions, isLoading, error } = useQuery<QuizQuestion[]>({
+    queryKey: ["quiz"],
     queryFn: async () => {
+      // Fetching from the working /api/quiz route
       const response = await fetch(`/api/quiz`); 
       if (!response.ok) throw new Error("Quiz not found");
       return response.json();
@@ -42,13 +42,10 @@ export default function QuizPage() {
   });
 
   useEffect(() => {
-    // Assuming quiz.generatedQuestions is now the structure returned by the dummy API
-    if (quiz) {
-        // The dummy API returns an array directly, not nested under generatedQuestions
-        const questions = quiz as unknown as QuizQuestion[]; 
-        setAnswers(new Array(questions.length).fill(null));
+    if (questions) {
+      setAnswers(new Array(questions.length).fill(null));
     }
-  }, [quiz]);
+  }, [questions]);
 
   if (isLoading) {
     return (
@@ -61,7 +58,7 @@ export default function QuizPage() {
     );
   }
 
-  if (error || !quiz) {
+  if (error || !questions) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4">
         <Card className="max-w-md w-full text-center" data-testid="card-quiz-error">
@@ -81,13 +78,11 @@ export default function QuizPage() {
     );
   }
 
-  // Cast quiz data to expected questions array structure since the backend dummy data provides an array directly
-  const questions = quiz as unknown as QuizQuestion[]; 
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   const handleAnswer = (index: number) => {
-    if (showResult) return;
+    if (showResult || !question) return;
     setSelectedAnswer(index);
     setShowResult(true);
 
@@ -95,7 +90,7 @@ export default function QuizPage() {
     newAnswers[currentQuestion] = index;
     setAnswers(newAnswers);
 
-    if (index === question.correctIndex) { // Note: Dummy data uses `answer: "A"` instead of `correctIndex: 0`
+    if (index === question.correctIndex) {
       setScore(score + 1);
     }
   };
@@ -152,19 +147,22 @@ export default function QuizPage() {
             </div>
 
             <div className="grid grid-cols-5 gap-2">
-              {answers.map((answer, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "h-3 rounded-full",
-                    // NOTE: This logic assumes correctIndex exists, but dummy data has `answer`
-                    answer === questions[index].correctIndex 
-                      ? "bg-green-500"
-                      : "bg-destructive"
-                  )}
-                  data-testid={`result-indicator-${index}`}
-                />
-              ))}
+              {answers.map((answer, index) => {
+                 const currentQ = questions[index];
+                 const isCorrect = answer === currentQ?.correctIndex;
+                 return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "h-3 rounded-full",
+                      isCorrect
+                        ? "bg-green-500"
+                        : "bg-destructive"
+                    )}
+                    data-testid={`result-indicator-${index}`}
+                  />
+                )}
+              )}
             </div>
 
             <div className="space-y-3 pt-4">
@@ -198,8 +196,8 @@ export default function QuizPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <Badge variant="secondary" className="text-sm" data-testid="badge-topic">
-              {/* Dummy data does not have a topic field */}
-              Quiz Topic
+              {/* Using topic from the data structure now */}
+              {question?.funFact ? "Egyptian History" : "Quiz Topic"} 
             </Badge>
             <span className="text-sm text-muted-foreground" data-testid="text-progress">
               Question {currentQuestion + 1} of {questions.length}
@@ -208,6 +206,7 @@ export default function QuizPage() {
           <Progress value={progress} className="h-2" />
         </div>
 
+        {question && (
         <Card className="border-2 border-border/50 shadow-xl" data-testid="card-question">
           <CardHeader className="pb-4">
             <div className="flex items-start gap-4">
@@ -222,40 +221,44 @@ export default function QuizPage() {
 
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              {question.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(index)}
-                  disabled={showResult}
-                  className={cn(
-                    "w-full p-4 text-left rounded-lg border-2 transition-all duration-200 flex items-center justify-between",
-                    !showResult
-                      ? "bg-white hover:bg-gray-100 border-gray-200"
-                      : index === question.correctIndex // Note: This logic assumes correctIndex exists, but dummy data has `answer`
-                      ? "bg-green-100 border-green-500 text-green-700"
-                      : selectedAnswer === index
-                      ? "bg-red-100 border-red-500 text-red-700 opacity-50"
-                      : "bg-white border-gray-200 opacity-50"
-                  )}
-                  data-testid={`button-option-${index}`}
-                >
-                  <span>{option}</span>
-                  {showResult &&
-                    // Note: This logic assumes correctIndex exists, but dummy data has `answer`
-                    (index === question.correctIndex ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : (
-                      selectedAnswer === index && (
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      )
-                    ))}
-                </button>
-              ))}
+              {question.options.map((option, index) => {
+                const isCorrect = index === question.correctIndex;
+                const isSelected = selectedAnswer === index;
+
+                return (
+                    <button
+                        key={index}
+                        onClick={() => handleAnswer(index)}
+                        disabled={showResult}
+                        className={cn(
+                            "w-full p-4 text-left rounded-lg border-2 transition-all duration-200 flex items-center justify-between",
+                            !showResult
+                                ? "bg-white hover:bg-gray-100 border-gray-200"
+                                : isCorrect
+                                ? "bg-green-100 border-green-500 text-green-700"
+                                : isSelected
+                                ? "bg-red-100 border-red-500 text-red-700 opacity-50"
+                                : "bg-white border-gray-200 opacity-50"
+                        )}
+                        data-testid={`button-option-${index}`}
+                    >
+                        <span>{option}</span>
+                        {showResult &&
+                            (isCorrect ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            ) : (
+                                isSelected && (
+                                    <XCircle className="w-5 h-5 text-red-600" />
+                                )
+                            ))}
+                    </button>
+                )
+              })}
             </div>
 
             {showResult && (
               <div className="space-y-4 pt-4">
-                {question.funFact && ( // Dummy data uses `fact` instead of `funFact`
+                {question.funFact && (
                   <div className="flex items-start p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800" data-testid="fun-fact">
                     <Lightbulb className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
                     <p className="text-sm">{question.funFact}</p>
@@ -273,6 +276,7 @@ export default function QuizPage() {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import express from "express";
-// import { generateQuiz } from "./quizGenerator"; // use this once generateQuiz is ready
+import { generateQuiz } from "./quizGenerator"; // UNCOMMENTED
 
 const router = express.Router();
 
@@ -8,16 +8,9 @@ router.get("/hello", (req, res) => {
   res.send("Hello world");
 });
 
-// Quiz route with 10 questions that match the frontend's expected format
+// Quiz route using the real 10-question generator
 router.get("/api/quiz", (req, res) => {
-  // Modified data structure to match QuizQuestion interface
-  const quiz = Array.from({ length: 10 }).map((_, i) => ({
-    question: `Sample question ${i + 1}`,
-    options: ["Option A", "Option B", "Option C", "Option D"],
-    correctIndex: 0, // Frontend expects 'correctIndex' (number 0-3)
-    funFact: `Fun fact ${i + 1}` // Frontend expects 'funFact'
-  }));
-
+  const quiz = generateQuiz("egypt"); // Using the function from quizGenerator.ts
   res.json(quiz);
 });
 
