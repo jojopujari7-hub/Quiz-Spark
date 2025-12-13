@@ -1,5 +1,7 @@
-run = "npx ts-node index.ts"
+run = "npm run dev"
 
-[[ports]]
-localPort = 5000
-externalPort = 80
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm run start"]
