@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
+  "functions": {
+    "api/quizzes/index.ts": {
+      "maxDuration": 10
+    },
+    "api/quizzes/[id].ts": {
+      "maxDuration": 10
+    }
+  }
+}
+

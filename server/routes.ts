@@ -38,7 +38,22 @@ export function registerRoutes(httpServer: Server | null, app: Express) {
       res.json(quiz);
     } catch (error) {
       console.error("Error creating quiz:", error);
-      res.status(500).json({ error: "Failed to create quiz" });
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to create quiz";
+      if (error instanceof Error) {
+        // Check for database connection errors (including nested errors from Drizzle)
+        const errorText = error.message + (error.cause ? String(error.cause) : "");
+        if (errorText.includes("ECONNREFUSED") || errorText.includes("connect") || errorText.includes("Connection refused")) {
+          errorMessage = "Database connection failed. Please ensure PostgreSQL is running and DATABASE_URL is configured correctly.";
+        } else if (errorText.includes("relation") && errorText.includes("does not exist")) {
+          errorMessage = "Database table not found. Please run the migrations to set up the database schema.";
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+      }
+      
+      res.status(500).json({ error: errorMessage });
     }
   });
 
@@ -53,7 +68,18 @@ export function registerRoutes(httpServer: Server | null, app: Express) {
       res.json(quiz);
     } catch (error) {
       console.error("Error fetching quiz:", error);
-      res.status(500).json({ error: "Failed to fetch quiz" });
+      
+      let errorMessage = "Failed to fetch quiz";
+      if (error instanceof Error) {
+        const errorText = error.message + (error.cause ? String(error.cause) : "");
+        if (errorText.includes("ECONNREFUSED") || errorText.includes("connect") || errorText.includes("Connection refused")) {
+          errorMessage = "Database connection failed. Please ensure PostgreSQL is running and DATABASE_URL is configured correctly.";
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+      }
+      
+      res.status(500).json({ error: errorMessage });
     }
   });
 }
