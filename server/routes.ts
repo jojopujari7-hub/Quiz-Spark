@@ -1,74 +1,59 @@
-import express from "express";
+import express, { type Express } from "express";
+import { Server } from "http";
+import { storage } from "./storage";
+import { generateQuiz } from "./quizGenerator";
+import { quizRequestSchema, type QuizQuestion } from "@shared/schema";
+import { fromZodError } from "zod-validation-error";
 
-const router = express.Router();
+export function registerRoutes(httpServer: Server | null, app: Express) {
+  app.post("/api/quizzes", async (req, res) => {
+    try {
+      const validation = quizRequestSchema.safeParse(req.body);
 
-router.get("/api/quiz", (req, res) => {
-  const quiz = [
-    {
-      question: "Which weapon was especially important for Egyptian archers?",
-      options: ["Bow and arrow", "Spear", "Sword", "Sling"],
-      answer: "Bow and arrow",
-      fact: "Composite bows gave Egyptian archers greater range and power."
-    },
-    {
-      question: "What military innovation did Egyptians adopt from the Hyksos?",
-      options: ["Chariot", "Catapult", "War elephants", "Gunpowder"],
-      answer: "Chariot",
-      fact: "Chariots became a decisive weapon in Egyptian warfare."
-    },
-    {
-      question: "Which material was commonly used for Egyptian shields?",
-      options: ["Bronze", "Wood and leather", "Iron", "Stone"],
-      answer: "Wood and leather",
-      fact: "Shields were lightweight, making them easier to carry in battle."
-    },
-    {
-      question: "How were Egyptian armies organized during campaigns?",
-      options: ["Into divisions", "Into clans", "Into guilds", "Into tribes"],
-      answer: "Into divisions",
-      fact: "Each division was named after a god and had thousands of soldiers."
-    },
-    {
-      question: "What was daily life like for Egyptian soldiers?",
-      options: ["Farming when not at war", "Constant training", "Living in palaces", "Traveling abroad"],
-      answer: "Farming when not at war",
-      fact: "Soldiers often returned to agriculture between campaigns."
-    },
-    {
-      question: "Which Pharaoh is famous for expanding Egypt’s military power into Nubia and the Levant?",
-      options: ["Ramses II", "Thutmose III", "Akhenaten", "Tutankhamun"],
-      answer: "Thutmose III",
-      fact: "Thutmose III led 17 campaigns and greatly expanded Egypt’s empire."
-    },
-    {
-      question: "What was the Battle of Kadesh known for?",
-      options: ["Largest chariot battle", "First naval battle", "Last pyramid defense", "Siege of Thebes"],
-      answer: "Largest chariot battle",
-      fact: "Ramses II fought the Hittites at Kadesh around 1274 BCE."
-    },
-    {
-      question: "Which enemy did Egypt frequently fight in the south?",
-      options: ["Nubians", "Persians", "Greeks", "Romans"],
-      answer: "Nubians",
-      fact: "Egypt both fought and traded with Nubia, rich in gold."
-    },
-    {
-      question: "What role did mercenaries play in the Egyptian military?",
-      options: ["Guarding temples", "Supporting campaigns", "Building pyramids", "Farming land"],
-      answer: "Supporting campaigns",
-      fact: "Egypt hired foreign soldiers, including Libyans and Nubians."
-    },
-    {
-      question: "Which Pharaoh signed one of the world’s first recorded peace treaties?",
-      options: ["Ramses II", "Amenhotep III", "Sneferu", "Khufu"],
-      answer: "Ramses II",
-      fact: "After the Battle of Kadesh, Ramses II and the Hittites agreed to a peace treaty."
+      if (!validation.success) {
+        const readableError = fromZodError(validation.error);
+        return res.status(400).json({ error: readableError.message });
+      }
+
+      const { topic, seedQuestions } = validation.data;
+
+      const rawQuestions = generateQuiz(topic);
+
+      const generatedQuestions: QuizQuestion[] = rawQuestions.map((q) => {
+        const correctIndex = q.options.findIndex(opt => opt === q.answer);
+        return {
+          question: q.question,
+          options: q.options,
+          correctIndex: correctIndex >= 0 ? correctIndex : 0,
+          funFact: q.fact,
+        };
+      });
+
+      const quiz = await storage.createQuiz({
+        topic,
+        seedQuestions,
+        generatedQuestions,
+      });
+
+      res.json(quiz);
+    } catch (error) {
+      console.error("Error creating quiz:", error);
+      res.status(500).json({ error: "Failed to create quiz" });
     }
-  ];
+  });
 
-  res.json(quiz);
-});
+  app.get("/api/quizzes/:id", async (req, res) => {
+    try {
+      const quiz = await storage.getQuiz(req.params.id);
 
-export function registerRoutes(_httpServer: any, app: express.Express) {
-  app.use(router);
+      if (!quiz) {
+        return res.status(404).json({ error: "Quiz not found" });
+      }
+
+      res.json(quiz);
+    } catch (error) {
+      console.error("Error fetching quiz:", error);
+      res.status(500).json({ error: "Failed to fetch quiz" });
+    }
+  });
 }

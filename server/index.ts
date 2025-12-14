@@ -1,18 +1,54 @@
-import express from "express";
+import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
+import { setupVite } from "./vite";
+import { serveStatic } from "./static";
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// Mount routes
-registerRoutes(null, app);
+const server = createServer(app);
 
-// Root route
-app.get("/", (req, res) => {
-  res.send("Server is running! Try /api/quiz");
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+      console.log(logLine);
+    }
+  });
+
+  next();
 });
 
-// Use environment port (Replit sets this automatically)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+(async () => {
+  registerRoutes(server, app);
+
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app);
+  } else {
+    await setupVite(server, app);
+  }
+
+  const PORT = parseInt(process.env.PORT || "3000");
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+})();

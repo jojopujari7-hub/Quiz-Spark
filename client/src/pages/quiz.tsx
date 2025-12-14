@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  CheckCircle2, 
-  XCircle, 
-  ArrowRight, 
-  RotateCcw, 
+import {
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  RotateCcw,
   Trophy,
   Sparkles,
   Home,
@@ -17,15 +17,19 @@ import {
   PartyPopper,
   Lightbulb
 } from "lucide-react";
-// Remove problematic import: import type { Quiz, QuizQuestion } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
-// Define the type that matches your server's current dummy data structure
-interface DummyQuestionData {
-    question: string;
-    options: string[];
-    answer: string; // "A", "B", "C", or "D"
-    fact: string; // "Fun fact 1", etc.
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  funFact?: string;
+}
+
+interface Quiz {
+  id: string;
+  topic: string;
+  generatedQuestions: QuizQuestion[];
 }
 
 export default function QuizPage() {
@@ -38,15 +42,16 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [isFinished, setIsFinished] = useState(false);
 
-  const { data: questions, isLoading, error } = useQuery<DummyQuestionData[]>({
-    queryKey: ["quiz"],
-    // Calling the endpoint defined in routes.ts that provides dummy data
+  const { data: quiz, isLoading, error } = useQuery<Quiz>({
+    queryKey: ["quiz", id],
     queryFn: async () => {
-      const response = await fetch(`/api/quiz`); 
+      const response = await fetch(`/api/quizzes/${id}`);
       if (!response.ok) throw new Error("Quiz not found");
       return response.json();
     },
   });
+
+  const questions = quiz?.generatedQuestions;
 
   useEffect(() => {
     if (questions) {
@@ -74,9 +79,7 @@ export default function QuizPage() {
     newAnswers[currentQuestion] = index;
     setAnswers(newAnswers);
 
-    // Safely calculate correct index using the 'answer' field (e.g. "Option A")
-    const correctOptionIndex = question.options.indexOf("Option " + question.answer);
-    if (index === correctOptionIndex) {
+    if (index === question.correctIndex) {
       setScore(score + 1);
     }
   };
@@ -101,16 +104,62 @@ export default function QuizPage() {
   };
 
   const getScoreMessage = () => {
-    const percentage = (score / questions.length) * 100;
-    if (percentage === 100) return "Perfect Score! You're a genius! 🎉";
-    if (percentage >= 80) return "Amazing! You really know your stuff! 🌟";
-    if (percentage >= 60) return "Great job! You're getting there! 💪";
-    if (percentage >= 40) return "Not bad! Keep learning! 📚";
-    return "Keep trying! Practice makes perfect! 🎯";
+    const percentage = (score / questions!.length) * 100;
+    if (percentage === 100) return "Perfect Score! You're a genius!";
+    if (percentage >= 80) return "Amazing! You really know your stuff!";
+    if (percentage >= 60) return "Great job! You're getting there!";
+    if (percentage >= 40) return "Not bad! Keep learning!";
+    return "Keep trying! Practice makes perfect!";
   };
 
   if (isFinished) {
-    return (<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12"><Card className="max-w-lg w-full border-2 border-border/50 shadow-xl" data-testid="card-quiz-results"><CardHeader className="text-center pb-2"><div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">{score >= questions.length * 0.8 ? (<PartyPopper className="w-10 h-10 text-primary" />) : (<Trophy className="w-10 h-10 text-primary" />)}</div><CardTitle className="text-3xl">Quiz Complete!</CardTitle></CardHeader><CardContent className="space-y-6"><div className="text-center"><div className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">{score}/{questions.length}</div><p className="text-lg text-muted-foreground">{getScoreMessage()}</p></div><div className="grid grid-cols-5 gap-2">{answers.map((answer, index) => {const currentQ = questions[index]; const correctOptionIndex = currentQ?.options.indexOf("Option " + (currentQ?.answer ?? "")); const isCorrect = answer === correctOptionIndex; return (<div key={index} className={cn("h-3 rounded-full", isCorrect ? "bg-green-500" : "bg-destructive")} data-testid={`result-indicator-${index}`} />)}))}</div><div className="space-y-3 pt-4"><Button onClick={restartQuiz} className="w-full h-12" data-testid="button-restart-quiz"><RotateCcw className="w-4 h-4 mr-2" />Try Again</Button><Button variant="outline" onClick={() => setLocation("/")} className="w-full h-12" data-testid="button-new-quiz"><Sparkles className="w-4 h-4 mr-2" />Create New Quiz</Button></div></CardContent></Card></div>);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
+        <Card className="max-w-lg w-full border-2 border-border/50 shadow-xl" data-testid="card-quiz-results">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+              {score >= questions!.length * 0.8 ? (
+                <PartyPopper className="w-10 h-10 text-primary" />
+              ) : (
+                <Trophy className="w-10 h-10 text-primary" />
+              )}
+            </div>
+            <CardTitle className="text-3xl">Quiz Complete!</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center">
+              <div className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent mb-2">
+                {score}/{questions!.length}
+              </div>
+              <p className="text-lg text-muted-foreground">{getScoreMessage()}</p>
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {answers.map((answer, index) => {
+                const currentQ = questions![index];
+                const isCorrect = answer === currentQ.correctIndex;
+                return (
+                  <div
+                    key={index}
+                    className={cn("h-3 rounded-full", isCorrect ? "bg-green-500" : "bg-destructive")}
+                    data-testid={`result-indicator-${index}`}
+                  />
+                );
+              })}
+            </div>
+            <div className="space-y-3 pt-4">
+              <Button onClick={restartQuiz} className="w-full h-12" data-testid="button-restart-quiz">
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+              <Button variant="outline" onClick={() => setLocation("/")} className="w-full h-12" data-testid="button-new-quiz">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Create New Quiz
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -119,10 +168,10 @@ export default function QuizPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <Badge variant="secondary" className="text-sm" data-testid="badge-topic">
-              Quiz Topic
+              {quiz?.topic || "Quiz"}
             </Badge>
             <span className="text-sm text-muted-foreground" data-testid="text-progress">
-              Question {currentQuestion + 1} of {questions.length}
+              Question {currentQuestion + 1} of {questions?.length}
             </span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -144,8 +193,7 @@ export default function QuizPage() {
           <CardContent className="space-y-4">
             <div className="space-y-3">
               {question.options.map((option, index) => {
-                const correctOptionIndex = question.options.indexOf("Option " + (question.answer ?? ""));
-                const isCorrect = index === correctOptionIndex;
+                const isCorrect = index === question.correctIndex;
                 const isSelected = selectedAnswer === index;
 
                 return (
@@ -181,10 +229,10 @@ export default function QuizPage() {
 
             {showResult && (
               <div className="space-y-4 pt-4">
-                {question.fact && (
+                {question.funFact && (
                   <div className="flex items-start p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800" data-testid="fun-fact">
                     <Lightbulb className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm">{question.fact}</p>
+                    <p className="text-sm">{question.funFact}</p>
                   </div>
                 )}
                 <Button 
