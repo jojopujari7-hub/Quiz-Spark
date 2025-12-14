@@ -1,2 +1,13 @@
 [agent]
 mockupState = "PENDING"
+
+[workflows]
+
+[[workflows.workflow]]
+name = "run app"
+mode = "sequential"
+author = 50818960
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm start"
