@@ -3,8 +3,12 @@ primary_region = "sjc"
 
 [build]
 
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
@@ -15,4 +19,3 @@ primary_region = "sjc"
   cpu_kind = "shared"
   cpus = 1
   memory_mb = 256
-
