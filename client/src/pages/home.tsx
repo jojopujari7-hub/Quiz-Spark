@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useHashLocation } from "wouter/use-hash-location";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Sparkles, Zap, Brain, Plus, X, Loader2 } from "lucide-react";
 import type { Quiz } from "@shared/schema";
 
 export default function Home() {
-  const [, setLocation] = useLocation();
+  const [, setLocation] = useHashLocation();
   const { toast } = useToast();
   const [topic, setTopic] = useState("");
   const [questions, setQuestions] = useState([""]);
