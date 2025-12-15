@@ -18,18 +18,9 @@ export default function Home() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (data: { topic: string; seedQuestions: string[] }) => {
-      const response = await fetch("/api/quizzes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create quiz");
-      }
-      
-      return response.json() as Promise<Quiz>;
+      // Use Supabase REST API directly
+      const { createQuiz } = await import("@/lib/supabase");
+      return createQuiz(data.topic, data.seedQuestions);
     },
     onSuccess: (quiz) => {
       setLocation(`/quiz/${quiz.id}`);

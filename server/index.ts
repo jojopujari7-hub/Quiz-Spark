@@ -47,7 +47,7 @@ app.use((req, res, next) => {
     await setupVite(server, app);
   }
 
-  const PORT = parseInt(process.env.PORT || "3000");
+  const PORT = parseInt(process.env.PORT || process.env.FLY_PORT || "3000");
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
   });

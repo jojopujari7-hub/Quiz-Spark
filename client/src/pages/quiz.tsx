@@ -45,9 +45,10 @@ export default function QuizPage() {
   const { data: quiz, isLoading, error } = useQuery<Quiz>({
     queryKey: ["quiz", id],
     queryFn: async () => {
-      const response = await fetch(`/api/quizzes/${id}`);
-      if (!response.ok) throw new Error("Quiz not found");
-      return response.json();
+      const { getQuiz } = await import("@/lib/supabase");
+      const quiz = await getQuiz(id);
+      if (!quiz) throw new Error("Quiz not found");
+      return quiz;
     },
   });
 
