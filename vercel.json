@@ -3,10 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "functions": {
-    "api/quizzes/index.ts": {
-      "maxDuration": 10
-    },
-    "api/quizzes/[id].ts": {
+    "api/**/*.ts": {
+      "includeFiles": "server/**",
       "maxDuration": 10
     }
   }

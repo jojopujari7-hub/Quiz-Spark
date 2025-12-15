@@ -1,6 +1,6 @@
-import { type Quiz, type InsertQuiz, quizzes } from "@shared/schema";
-import { db, pool } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { type Quiz, type InsertQuiz, quizzes } from "../shared/schema.js";
+import { db, pool } from "./db.js";
+import { eq, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export interface IStorage {
