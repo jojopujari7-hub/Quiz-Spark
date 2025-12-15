@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,27 +12,35 @@ import NotFound from "@/pages/not-found";
 const BASE_PATH = '/Quiz-Spark';
 
 // Custom location hook for Router that strips base path
-function useBasePathLocation() {
-  if (typeof window === 'undefined') return ['/', () => {}] as const;
-  
-  const getLocation = () => {
+function useBasePathLocation(): [string, (to: string, options?: { replace?: boolean }) => void] {
+  const getPath = useCallback(() => {
+    if (typeof window === 'undefined') return '/';
     const path = window.location.pathname;
-    return path.startsWith(BASE_PATH)
+    const normalized = path.startsWith(BASE_PATH)
       ? path.slice(BASE_PATH.length) || '/'
       : path;
-  };
-  
-  const setLocation = (path: string, replace = false) => {
-    const fullPath = path.startsWith(BASE_PATH) ? path : BASE_PATH + (path === '/' ? '' : path);
-    if (replace) {
+    return normalized;
+  }, []);
+
+  const [location, setLocationState] = useState(getPath);
+
+  useEffect(() => {
+    const handler = () => setLocationState(getPath());
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [getPath]);
+
+  const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
+    const fullPath = to.startsWith(BASE_PATH) ? to : BASE_PATH + (to === '/' ? '' : to);
+    if (options?.replace) {
       window.history.replaceState(null, '', fullPath);
     } else {
       window.history.pushState(null, '', fullPath);
     }
-    window.dispatchEvent(new PopStateEvent('popstate'));
-  };
-  
-  return [getLocation(), setLocation] as const;
+    setLocationState(getPath());
+  }, [getPath]);
+
+  return [location, navigate];
 }
 
 function Router() {
