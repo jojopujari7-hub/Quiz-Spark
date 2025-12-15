@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -11,24 +11,35 @@ import NotFound from "@/pages/not-found";
 // Base path for GitHub Pages
 const BASE_PATH = '/Quiz-Spark';
 
+// Store for location updates
+const listeners = new Set<() => void>();
+const subscribe = (callback: () => void) => {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+};
+const notifyListeners = () => listeners.forEach(l => l());
+
 // Custom location hook for Router that strips base path
 function useBasePathLocation(): [string, (to: string, options?: { replace?: boolean }) => void] {
-  const getPath = useCallback(() => {
+  const getPath = () => {
     if (typeof window === 'undefined') return '/';
     const path = window.location.pathname;
-    const normalized = path.startsWith(BASE_PATH)
+    return path.startsWith(BASE_PATH)
       ? path.slice(BASE_PATH.length) || '/'
       : path;
-    return normalized;
-  }, []);
+  };
 
-  const [location, setLocationState] = useState(getPath);
+  const location = useSyncExternalStore(
+    subscribe,
+    getPath,
+    () => '/'
+  );
 
   useEffect(() => {
-    const handler = () => setLocationState(getPath());
+    const handler = () => notifyListeners();
     window.addEventListener('popstate', handler);
     return () => window.removeEventListener('popstate', handler);
-  }, [getPath]);
+  }, []);
 
   const navigate = useCallback((to: string, options?: { replace?: boolean }) => {
     const fullPath = to.startsWith(BASE_PATH) ? to : BASE_PATH + (to === '/' ? '' : to);
@@ -37,8 +48,8 @@ function useBasePathLocation(): [string, (to: string, options?: { replace?: bool
     } else {
       window.history.pushState(null, '', fullPath);
     }
-    setLocationState(getPath());
-  }, [getPath]);
+    notifyListeners();
+  }, []);
 
   return [location, navigate];
 }
