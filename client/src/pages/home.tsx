@@ -23,8 +23,6 @@ export default function Home() {
       return createQuiz(data.topic, data.seedQuestions);
     },
     onSuccess: (quiz) => {
-      console.log('Quiz created:', quiz.id, 'Navigating to:', `/quiz/${quiz.id}`);
-      console.log('setLocation function:', setLocation.toString().slice(0, 100));
       setLocation(`/quiz/${quiz.id}`);
     },
     onError: (error: Error) => {
