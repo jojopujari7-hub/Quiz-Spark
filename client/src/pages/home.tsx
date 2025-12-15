@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "@/lib/useLocation";
+import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
