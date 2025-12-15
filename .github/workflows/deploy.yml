@@ -33,9 +33,9 @@ jobs:
       - name: Build static site
         run: npm run build:static
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://ekaykrxsfwpfzsmzxegj.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYXlrcnhzZndwZnpzbXp4ZWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NTA3NDAsImV4cCI6MjA4MTMyNjc0MH0.sFHWTUcCanHvmByQtZ0CjGXJwRJ3CWodifVF84joM6U' }}
-          GITHUB_PAGES: true
+          VITE_SUPABASE_URL: 'https://ekaykrxsfwpfzsmzxegj.supabase.co'
+          VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrYXlrcnhzZndwZnpzbXp4ZWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NTA3NDAsImV4cCI6MjA4MTMyNjc0MH0.sFHWTUcCanHvmByQtZ0CjGXJwRJ3CWodifVF84joM6U'
+          GITHUB_PAGES: 'true'
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -43,7 +43,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist/public'
+          path: 'dist/public'
 
   deploy:
     environment:
