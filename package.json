@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "build": "tsx script/build.ts",
+    "build:static": "vite build",
     "start": "NODE_ENV=production node dist/index.cjs",
     "vercel-build": "npm run build"
   },
